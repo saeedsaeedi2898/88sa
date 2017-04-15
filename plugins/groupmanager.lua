@@ -4008,8 +4008,6 @@ _set Welcome Message_
 _Show Tools Help_
 *!helpfun*
 _Show Fun Help_
-*!helpmute*
-_Show mute Help_
 _You Can Use_ *[!/#]* _To Run The Commands_
 _This Help List Only For_ *Moderators/Owners!*
 _Its Means, Only Group_ *Moderators/Owners* _Can Use It!_
@@ -4121,10 +4119,8 @@ _تنظیم زبان انگلیسی_
 _ثبت پیام خوش آمد گویی_
 *!راهنما ابزار*
 _نمایش راهنمای ابزار_
-*!راهنما سرگرمی*
+*!راهنمای سرگرمی*
 _نمایش راهنمای سرگرمی_
-*!راهنما بیصدا*
-_نمایش دستورات بیصدا های گروه_
 
 _این راهنما فقط برای مدیران/مالکان گروه میباشد!
 این به این معناست که فقط مدیران/مالکان گروه میتوانند از دستورات بالا استفاده کنند!_
