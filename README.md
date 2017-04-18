@@ -1,4 +1,4 @@
-# [BDReborn](http://yon.ir/a7sJg)
+# [BDReborn](http://yon.ir/r0DL3)
 * **Install Bot**
 `````sh
 yon.ir/4cR3
