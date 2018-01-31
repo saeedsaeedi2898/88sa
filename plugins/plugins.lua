@@ -1,5 +1,5 @@
 do
--- #Begin plugins.lua by #Reborn
+-- #Begin plugins.lua
 -- Returns the key (index) in the config.enabled_plugins table
 local function plugin_enabled( name )
   for k,v in pairs(_config.enabled_plugins) do
@@ -22,7 +22,7 @@ local function plugin_exists( name )
 end
 
 local function list_all_plugins(only_enabled, msg)
-  local tmp = '\n'..BDRpm
+  local tmp = '\n'..msg_caption
   local text = ''
   local nsum = 0
   for k, v in pairs( plugins_names( )) do
@@ -44,7 +44,7 @@ local function list_all_plugins(only_enabled, msg)
     end
   end
   text = '<code>'..text..'</code>\n\n'..nsum..' <b>📂plugins installed</b>\n\n'..nact..' <i>✔️plugins enabled</i>\n\n'..nsum-nact..' <i>❌plugins disabled</i>'..tmp
-  tdcli.sendMessage(msg.to.id, msg.id_, 1, text, 1, 'html')
+  tdbot.sendMessage(msg.to.id, msg.id, 1, text, 1, 'html')
 end
 
 local function list_plugins(only_enabled, msg)
@@ -68,8 +68,8 @@ local function list_plugins(only_enabled, msg)
      -- text = text..v..'  '..status..'\n'
     end
   end
-  text = "\n_🔃All Plugins Reloaded_\n\n"..nact.." *✔️Plugins Enabled*\n"..nsum.." *📂Plugins Installed*\n"..BDRpm
-  tdcli.sendMessage(msg.to.id, msg.id_, 1, text, 1, 'md')
+  text = "\n_🔃All Plugins Reloaded_\n\n"..nact.." *✔️Plugins Enabled*\n"..nsum.." *📂Plugins Installed*\n"..msg_caption
+  tdbot.sendMessage(msg.to.id, msg.id, 1, text, 1, 'md')
 end
 
 local function reload_plugins(checks, msg)
@@ -84,7 +84,7 @@ local function enable_plugin( plugin_name, msg )
   -- Check if plugin is enabled
   if plugin_enabled(plugin_name) then
     local text = '<b>'..plugin_name..'</b> <i>is enabled.</i>'
-	tdcli.sendMessage(msg.to.id, msg.id_, 1, text, 1, 'html')
+	tdbot.sendMessage(msg.to.id, msg.id, 1, text, 1, 'html')
 	return
   end
   -- Checks if plugin exists
@@ -97,7 +97,7 @@ local function enable_plugin( plugin_name, msg )
     return reload_plugins(true, msg)
   else
     local text = '<b>'..plugin_name..'</b> <i>does not exists.</i>'
-	tdcli.sendMessage(msg.to.id, msg.id_, 1, text, 1, 'html')
+	tdbot.sendMessage(msg.to.id, msg.id, 1, text, 1, 'html')
   end
 end
 
@@ -106,13 +106,13 @@ local function disable_plugin( name, msg )
   -- Check if plugin is enabled
   if not k then
     local text = '<b>'..name..'</b> <i>not enabled.</i>'
-	tdcli.sendMessage(msg.to.id, msg.id_, 1, text, 1, 'html')
+	tdbot.sendMessage(msg.to.id, msg.id, 1, text, 1, 'html')
 	return
   end
   -- Check if plugins exists
   if not plugin_exists(name) then
     local text = '<b>'..name..'</b> <i>does not exists.</i>'
-	tdcli.sendMessage(msg.to.id, msg.id_, 1, text, 1, 'html')
+	tdbot.sendMessage(msg.to.id, msg.id, 1, text, 1, 'html')
   else
   -- Disable and reload
   table.remove(_config.enabled_plugins, k)
@@ -138,7 +138,7 @@ local function disable_plugin_on_chat(receiver, plugin, msg)
 
   save_config()
   local text = '<b>'..plugin..'</b> <i>disabled on this chat.</i>'
-  tdcli.sendMessage(msg.to.id, msg.id_, 1, text, 1, 'html')
+  tdbot.sendMessage(msg.to.id, msg.id, 1, text, 1, 'html')
 end
 
 local function reenable_plugin_on_chat(receiver, plugin, msg)
@@ -157,19 +157,21 @@ local function reenable_plugin_on_chat(receiver, plugin, msg)
   _config.disabled_plugin_on_chat[receiver][plugin] = false
   save_config()
   local text = '<b>'..plugin..'</b> <i>is enabled again.</i>'
-  tdcli.sendMessage(msg.to.id, msg.id_, 1, text, 1, 'html')
+  tdbot.sendMessage(msg.to.id, msg.id, 1, text, 1, 'html')
 end
 
 local function run(msg, matches)
+local Chash = "cmd_lang:"..msg.to.id
+local Clang = redis:get(Chash)
   -- Show the available plugins 
   if is_sudo(msg) then
-  if (matches[1]:lower() == 'plist' or matches[1] == 'لیست پلاگین') then --after changed to moderator mode, set only sudo
+  if (matches[1]:lower() == 'plist' and not Clang) or (matches[1]:lower() == 'لیست پلاگین' and Clang) then --after changed to moderator mode, set only sudo
     return list_all_plugins(false, msg)
   end
 end
   -- Re-enable a plugin for this chat
-   if matches[1]:lower() == 'pl' or matches[1] == 'پلاگین' then
-  if matches[2] == '+' and matches[4] == 'chat' or matches[4] == 'گروه' then
+  if (matches[1]:lower() == 'pl' and not Clang) or (matches[1]:lower() == 'پلاگین' and Clang) then
+  if matches[2] == '+' and ((matches[4] == 'chat' and not Clang) or (matches[4] == 'گروه' and not Clang)) then
       if is_mod(msg) then
     local receiver = msg.chat_id_
     local plugin = matches[3]
@@ -185,7 +187,7 @@ end
     return enable_plugin(plugin_name, msg)
   end
   -- Disable a plugin on a chat
-  if matches[2] == '-' and matches[4] == 'chat' or matches[4] == 'گروه' then
+  if matches[2] == '-' and ((matches[4] == 'chat' and not Clang) or (matches[4] == 'گروه' and not Clang)) then
       if is_mod(msg) then
     local plugin = matches[3]
     local receiver = msg.chat_id_
@@ -207,7 +209,7 @@ end
     return reload_plugins(true, msg)
   end
   end
-  if (matches[1]:lower() == 'reload' or matches[1] == 'بارگذاری') and is_sudo(msg) then --after changed to moderator mode, set only sudo
+  if (matches[1]:lower() == 'reload' and not Clang) or (matches[1]:lower() == 'بارگذاری' and Clang) and is_sudo(msg) then --after changed to moderator mode, set only sudo
     return reload_plugins(true, msg)
   end
 end
@@ -226,29 +228,21 @@ return {
           "!pl * : reloads all plugins." },
           },
   patterns = {
-command .. "([Pp]list)$",
-command .. "([Pp]l) (+) ([%w_%.%-]+)$",
-command .. "([Pp]l) (-) ([%w_%.%-]+)$",
-command .. "([Pp]l) (+) ([%w_%.%-]+) (chat)$",
-command .. "([Pp]l) (-) ([%w_%.%-]+) (chat)$",
-command .. "([Pp]l) (*)$",
-command .. "([Rr]eload)$",
-"^([Pp]list)$",
-"^([Pp]l) (+) ([%w_%.%-]+)$",
-"^([Pp]l) (-) ([%w_%.%-]+)$",
-"^([Pp]l) (+) ([%w_%.%-]+) (chat)$",
-"^([Pp]l) (-) ([%w_%.%-]+) (chat)$",
-"^([Pp]l) (*)$",
-"^([Rr]eload)$"
+    "^[!/#]([Pp]list)$",
+    "^[!/#]([Pp]l) (+) ([%w_%.%-]+)$",
+    "^[!/#]([Pp]l) (-) ([%w_%.%-]+)$",
+    "^[!/#]([Pp]l) (+) ([%w_%.%-]+) (chat)",
+    "^[!/#]([Pp]l) (-) ([%w_%.%-]+) (chat)",
+    "^[!/#]([Pp]l) (*)$",
+    "^[!/#]([Rr]eload)$",
+    "^(لیست پلاگین)$",
+    "^(پلاگین) (+) ([%w_%.%-]+)$",
+    "^(پلاگین) (-) ([%w_%.%-]+)$",
+    "^(پلاگین) (+) ([%w_%.%-]+) (گروه)",
+    "^(پلاگین) (-) ([%w_%.%-]+) (گروه)",
+    "^(پلاگین) (*)$",
+    "^(بارگذاری)$",
     },
-	patterns_fa = {
-	"^(بارگذاری)$",
-	"^(لیست پلاگین)$",
-	"^(پلاگین) (+) ([%w_%.%-]+)$",
-	"^(پلاگین) (+) ([%w_%.%-]+)$",
-	"^(پلاگین) (+) ([%w_%.%-]+) (گروه)$",
-	"^(پلاگین) (+) ([%w_%.%-]+) (گروه)$", 
-	},
   run = run,
   moderated = true, -- set to moderator mode
   privileged = true
@@ -256,4 +250,3 @@ command .. "([Rr]eload)$",
 
 end
 
--- ##Reborn
