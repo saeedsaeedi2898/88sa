@@ -1,6 +1,4 @@
 --Begin msg_checks.lua By @SoLiD
-local TIME_CHECK = 2
-
 local function pre_process(msg)
 local data = load_data(_config.moderation.data)
 local chat = msg.to.id
@@ -10,8 +8,23 @@ local is_chat = msg.to.type == "chat"
 local auto_leave = 'auto_leave_bot'
 local hash = "gp_lang:"..chat
 local lang = redis:get(hash)
-local muteallchk = 'muteall:'..msg.to.id
-if is_channel or is_chat then
+
+if not redis:get('autodeltime') then
+	redis:setex('autodeltime', 14400, true)
+     run_bash("rm -rf ~/.telegram-bot/cli/data/stickers/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/files/photos/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/files/animations/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/files/videos/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/files/music/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/files/voice/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/files/temp/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/data/temp/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/files/documents/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/data/profile_photos/*")
+     run_bash("rm -rf ~/.telegram-bot/cli/files/video_notes/*")
+	 run_bash("rm -rf ./data/photos/*")
+end
+   if is_channel or is_chat then
         local TIME_CHECK = 2
         if data[tostring(chat)] then
           if data[tostring(chat)]['settings']['time_check'] then
@@ -21,37 +34,20 @@ if is_channel or is_chat then
     if msg.text then
   if msg.text:match("(.*)") then
     if not data[tostring(msg.to.id)] and not redis:get(auto_leave) and not is_admin(msg) then
-  tdcli.sendMessage(msg.to.id, "", 0, "_This Is Not One Of My_ *Groups*", 0, "md")
-  tdcli.changeChatMemberStatus(chat, our_id, 'Left', dl_cb, nil)
+  tdbot.sendMessage(msg.to.id, "", 0, "_This Is Not One Of My_ *Groups*", 0, "md")
+  tdbot.changeChatMemberStatus(chat, our_id, 'Left', dl_cb, nil)
       end
    end
-end
-  if redis:get(muteallchk) and not is_mod(msg) and not is_whitelist(msg.from.id, msg.to.id) then
-  if is_channel then
-    del_msg(chat, tonumber(msg.id))
-	elseif is_chat then
-	kick_user(user, chat)
-  end
-  end
-if not redis:get('autodeltime') then
-redis:setex('autodeltime', 14400, true)
-     run_bash("rm -rf ~/.telegram-cli/data/sticker/*")
-     run_bash("rm -rf ~/.telegram-cli/data/photo/*")
-     run_bash("rm -rf ~/.telegram-cli/data/animation/*")
-     run_bash("rm -rf ~/.telegram-cli/data/video/*")
-     run_bash("rm -rf ~/.telegram-cli/data/audio/*")
-     run_bash("rm -rf ~/.telegram-cli/data/voice/*")
-     run_bash("rm -rf ~/.telegram-cli/data/temp/*")
-     run_bash("rm -rf ~/.telegram-cli/data/thumb/*")
-     run_bash("rm -rf ~/.telegram-cli/data/document/*")
-     run_bash("rm -rf ~/.telegram-cli/data/profile_photo/*")
-     run_bash("rm -rf ~/.telegram-cli/data/encrypted/*")
-	 run_bash("rm -rf ./data/photos/*")
 end
     if data[tostring(chat)] and data[tostring(chat)]['mutes'] then
 		mutes = data[tostring(chat)]['mutes']
 	else
 		return
+	end
+	if mutes.mute_all then
+		mute_all = mutes.mute_all
+	else
+		mute_all = 'no'
 	end
 	if mutes.mute_gif then
 		mute_gif = mutes.mute_gif
@@ -123,6 +119,11 @@ end
 	else
 		mute_video = 'no'
 	end
+	if mutes.mute_video_note then
+		mute_video_note = mutes.mute_video_note
+	else
+		mute_video_note = 'no'
+	end
 	if mutes.mute_tgservice then
 		mute_tgservice = mutes.mute_tgservice
 	else
@@ -173,8 +174,8 @@ end
 	else
 		lock_spam = 'no'
 	end
-	if settings.lock_flood then
-		lock_flood = settings.lock_flood
+	if settings.flood then
+		lock_flood = settings.flood
 	else
 		lock_flood = 'no'
 	end
@@ -193,16 +194,16 @@ end
 del_msg(chat, tonumber(msg.id))
   end
 end
-if not is_mod(msg) and not is_whitelist(msg.from.id, msg.to.id) then
+ if not is_mod(msg) and not is_whitelist(msg.from.id, msg.to.id) and msg.from.id ~= our_id then
 	if msg.adduser or msg.joinuser then
 		if lock_join == "yes" then
 			function join_kick(arg, data)
-				kick_user(data.id_, msg.to.id)
+				kick_user(data.id, msg.to.id)
 			end
 			if msg.adduser then
-				tdcli.getUser(msg.adduser, join_kick, nil)
+				tdbot.getUser(msg.adduser, join_kick, nil)
 			elseif msg.joinuser then
-				tdcli.getUser(msg.joinuser, join_kick, nil)
+				tdbot.getUser(msg.joinuser, join_kick, nil)
 			end
 		end
 	end
@@ -217,18 +218,18 @@ end
      end
     local pin_msg = data[tostring(chat)]['pin']
       if pin_msg then
-  tdcli.pinChannelMessage(msg.to.id, pin_msg, 1)
+tdbot.pinChannelMessage(msg.to.id, pin_msg, 1, dl_cb, nil)
        elseif not pin_msg then
-   tdcli.unpinChannelMessage(msg.to.id)
+   tdbot.unpinChannelMessage(msg.to.id, dl_cb, nil)
           end
     if lang then
-     tdcli.sendMessage(msg.to.id, msg.id, 0, '<b>User ID :</b> <code>'..msg.from.id..'</code>\n<b>Username :</b> '..('@'..msg.from.username or '<i>No Username</i>')..'\n<i>شما اجازه دسترسی به سنجاق پیام را ندارید، به همین دلیل پیام قبلی مجدد سنجاق میگردد</i>', 0, "html")
+     tdbot.sendMessage(msg.to.id, msg.id, 0, '<b>User ID :</b> <code>'..msg.from.id..'</code>\n<b>Username :</b> '..('@'..msg.from.username or '<i>No Username</i>')..'\n<i>شما اجازه دسترسی به سنجاق پیام را ندارید، به همین دلیل پیام قبلی مجدد سنجاق میگردد</i>', 0, "html")
      elseif not lang then
-    tdcli.sendMessage(msg.to.id, msg.id, 0, '<b>User ID :</b> <code>'..msg.from.id..'</code>\n<b>Username :</b> '..('@'..msg.from.username or '<i>No Username</i>')..'\n<i>You Have Not Permission To Pin Message, Last Message Has Been Pinned Again</i>', 0, "html")
+    tdbot.sendMessage(msg.to.id, msg.id, 0, '<b>User ID :</b> <code>'..msg.from.id..'</code>\n<b>Username :</b> '..('@'..msg.from.username or '<i>No Username</i>')..'\n<i>You Have Not Permission To Pin Message, Last Message Has Been Pinned Again</i>', 0, "html")
           end
       end
   end
-      if not is_mod(msg) and not is_whitelist(msg.from.id, msg.to.id) then
+if not is_mod(msg) and not is_whitelist(msg.from.id, msg.to.id) and msg.from.id ~= our_id then
 if msg.edited and lock_edit == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
@@ -236,71 +237,78 @@ if msg.edited and lock_edit == "yes" then
 kick_user(user, chat)
     end
   end
-if msg.forward_info_ and mute_forward == "yes" then
+if (msg.fwd_from_user or msg.fwd_from_channel) and mute_forward == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
     end
   end
-if msg.photo_ and mute_photo == "yes" then
+if msg.photo and mute_photo == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-    if msg.video_ and mute_video == "yes" then
+    if msg.video and mute_video == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-    if msg.document_ and mute_document == "yes" then
+    if msg.video_note and mute_video_note == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-    if msg.sticker_ and mute_sticker == "yes" then
+    if msg.document and mute_document == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-    if msg.animation_ and mute_gif == "yes" then
+    if msg.sticker and mute_sticker == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-    if msg.contact_ and mute_contact == "yes" then
+    if msg.animation and mute_gif == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-    if msg.location_ and mute_location == "yes" then
+    if msg.contact and mute_contact == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-    if msg.voice_ and mute_voice == "yes" then
+    if msg.location and mute_location == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-   if msg.content_ and mute_keyboard == "yes" then
-  if msg.reply_markup_ and  msg.reply_markup_.ID == "ReplyMarkupInlineKeyboard" then
+    if msg.voice and mute_voice == "yes" then
+ if is_channel then
+ del_msg(chat, tonumber(msg.id))
+  elseif is_chat then
+kick_user(user, chat)
+   end
+end
+   if msg.content and mute_keyboard == "yes" then
+  if msg.keyboard then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
@@ -308,21 +316,21 @@ kick_user(user, chat)
       end
    end
 end
-    if tonumber(msg.via_bot_user_id_) ~= 0 and mute_inline == "yes" then
+    if msg.inline and mute_inline == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-    if msg.game_ and mute_game == "yes" then
+    if msg.game and mute_game == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
    end
 end
-    if msg.audio_ and mute_audio == "yes" then
+    if msg.audio and mute_audio == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
@@ -330,11 +338,13 @@ kick_user(user, chat)
    end
 end
 if msg.media.caption then
+print('1')
 local link_caption = msg.media.caption:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Mm][Ee]/") or msg.media.caption:match("[Tt][Ee][Ll][Ee][Gg][Rr][Aa][Mm].[Dd][Oo][Gg]/") or msg.media.caption:match("[Tt].[Mm][Ee]/") or msg.media.caption:match("[Tt][Ll][Gg][Rr][Mm].[Mm][Ee]/")
-if link_caption
-and lock_link == "yes" then
+if link_caption and lock_link == "yes" then
+print('2')
  if is_channel then
- del_msg(chat, tonumber(msg.id))
+ print('4')
+ del_msg(chat, msg.id)
   elseif is_chat then
 kick_user(user, chat)
    end
@@ -424,8 +434,14 @@ kick_user(user, chat)
      end
    end
 end
-if msg.content_.entities_ and msg.content_.entities_[0] then
-    if msg.content_.entities_[0].ID == "MessageEntityMentionName" then
+if mute_all == "yes" then 
+ if is_channel then
+ del_msg(chat, tonumber(msg.id))
+  elseif is_chat then
+kick_user(user, chat)
+   end
+end
+    if msg.entity.mention then
       if lock_mention == "yes" then
  if is_channel then
  del_msg(chat, tonumber(msg.id))
@@ -434,7 +450,7 @@ kick_user(user, chat)
              end
           end
       end
-  if msg.content_.entities_[0].ID == "MessageEntityUrl" or msg.content_.entities_[0].ID == "MessageEntityTextUrl" then
+  if msg.entity.webpage then
       if lock_webpage == "yes" then
 if is_channel then
  del_msg(chat, tonumber(msg.id))
@@ -443,24 +459,17 @@ kick_user(user, chat)
              end
           end
       end
-  if msg.content_.entities_[0].ID == "MessageEntityBold" or msg.content_.entities_[0].ID == "MessageEntityCode" or msg.content_.entities_[0].ID == "MessageEntityPre" or msg.content_.entities_[0].ID == "MessageEntityItalic" then
+  if msg.entity.markdown then
       if lock_markdown == "yes" then
 if is_channel then
  del_msg(chat, tonumber(msg.id))
   elseif is_chat then
 kick_user(user, chat)
-             end
           end
       end
  end
 if msg.to.type ~= 'pv' then
-  if lock_flood == "yes" then
-    if is_mod(msg) and is_whitelist(msg.from.id, msg.to.id) then
-    return
-  end
-  if msg.adduser or msg.joinuser then
-    return
-  end
+  if lock_flood == "yes" and not is_mod(msg) and not is_whitelist(msg.from.id, msg.to.id) and not msg.adduser and msg.from.id ~= our_id then
     local hash = 'user:'..user..':msgs'
     local msgs = tonumber(redis:get(hash) or 0)
         local NUM_MSG_MAX = 5
@@ -480,11 +489,10 @@ return
 else
    del_msg(chat, msg.id)
     kick_user(user, chat)
-	redis:del(hash)
    if not lang then
-  tdcli.sendMessage(chat, msg.id, 0, "_User_ "..user_name.." `[ "..user.." ]` _has been_ *kicked* _because of_ *flooding*", 0, "md")
+  tdbot.sendMessage(chat, msg.id, 0, "_User_ "..user_name.." `[ "..user.." ]` _has been_ *kicked* _because of_ *flooding*", 0, "md")
    elseif lang then
-  tdcli.sendMessage(chat, msg.id, 0, "_کاربر_ "..user_name.." `[ "..user.." ]` _به دلیل ارسال پیام های مکرر اخراج شد_", 0, "md")
+  tdbot.sendMessage(chat, msg.id, 0, "_کاربر_ "..user_name.." `[ "..user.." ]` _به دلیل ارسال پیام های مکرر اخراج شد_", 0, "md")
     end
 redis:setex('sender:'..user..':flood', 30, true)
       end
@@ -494,11 +502,9 @@ redis:setex('sender:'..user..':flood', 30, true)
            end
       end
    end
-   return msg
 end
 return {
 	patterns = {},
-	patterns_fa = {},
 	pre_process = pre_process
 }
 --End msg_checks.lua--
